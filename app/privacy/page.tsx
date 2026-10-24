@@ -117,6 +117,10 @@ export default function PrivacyPage() {
             <li>Deleting a product removes its policies and reminders in the same transaction.</li>
             <li>Deleting the local database file removes everything, because nothing is kept elsewhere.</li>
             <li>AI extraction is optional: manual entry works with no model and no network.</li>
+            <li>
+              If you point the app at an open-weight endpoint, the extracted text of that one request is sent there.
+              The file, the prompt and the raw reply are still not stored.
+            </li>
           </ul>
         </CardContent>
       </Card>

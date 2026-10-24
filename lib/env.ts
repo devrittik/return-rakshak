@@ -23,6 +23,11 @@ export type ServerEnv = z.infer<typeof schema>;
 
 let cached: ServerEnv | null = null;
 
+/** Tests use this to vary `process.env` between cases. Production never calls it. */
+export function resetEnvCache(): void {
+  cached = null;
+}
+
 export function env(): ServerEnv {
   if (cached) return cached;
   const parsed = schema.safeParse(process.env);

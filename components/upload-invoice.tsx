@@ -7,14 +7,17 @@ import {
   Loader2,
   Lock,
   ScanText,
+  Sparkles,
   Trash2,
   Upload,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useId, useRef, useState } from "react";
+import { ReviewExtractionForm } from "@/components/review-extraction-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ExtractionModel } from "@/lib/ai/schema";
 import { cn } from "@/lib/utils";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -37,6 +40,15 @@ type Extraction = {
 
 type Failure = { ok: false; code: string; error: string };
 
+type FieldExtraction = {
+  ok: true;
+  provider: string;
+  model: string;
+  durationMs: number;
+  data: ExtractionModel;
+  notice: string;
+};
+
 function humanSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -52,12 +64,18 @@ export function UploadInvoice() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Extraction | null>(null);
   const [showText, setShowText] = useState(false);
+  const [fields, setFields] = useState<FieldExtraction | null>(null);
+  const [fieldBusy, setFieldBusy] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setResult(null);
     setError(null);
     setFileLabel(null);
     setShowText(false);
+    setFields(null);
+    setFieldError(null);
+    setFieldBusy(false);
     if (inputRef.current) inputRef.current.value = "";
   }, []);
 
@@ -66,6 +84,8 @@ export function UploadInvoice() {
       setError(null);
       setResult(null);
       setShowText(false);
+      setFields(null);
+      setFieldError(null);
       setFileLabel(`${file.name} · ${humanSize(file.size)}`);
 
       // Fast client-side checks. The server re-validates everything.
@@ -97,6 +117,40 @@ export function UploadInvoice() {
     },
     [],
   );
+
+  const extractFields = useCallback(async () => {
+    if (!result) return;
+    setFieldBusy(true);
+    setFieldError(null);
+    try {
+      const response = await fetch("/api/extract-fields", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: result.text }),
+      });
+      const payload = (await response.json()) as FieldExtraction | Failure;
+      if (!response.ok || !payload.ok) {
+        setFieldError("error" in payload && payload.error ? payload.error : "Field extraction failed.");
+        return;
+      }
+      setFields(payload);
+    } catch {
+      setFieldError("Couldn't reach the extractor. You can still add this product manually.");
+    } finally {
+      setFieldBusy(false);
+    }
+  }, [result]);
+
+  if (fields) {
+    return (
+      <ReviewExtractionForm
+        extraction={fields.data}
+        provider={fields.provider}
+        model={fields.model}
+        onBack={() => setFields(null)}
+      />
+    );
+  }
 
   function onDrop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -249,18 +303,31 @@ export function UploadInvoice() {
                 ) : null}
               </div>
 
+              <div className="flex flex-wrap items-center gap-2 rounded border border-border bg-muted/40 px-3 py-3">
+                <Button type="button" size="sm" loading={fieldBusy} onClick={() => void extractFields()}>
+                  <Sparkles aria-hidden />
+                  Extract fields
+                </Button>
+                <span className="text-[12px] leading-relaxed text-muted-foreground">
+                  Sends this text once to the configured extractor and shows you the proposed fields for review.
+                </span>
+              </div>
+
+              {fieldError ? (
+                <div role="alert" className="rounded border border-danger/30 bg-danger-muted px-3 py-2.5 text-[12px] leading-relaxed text-danger">
+                  <p className="font-medium">{fieldError}</p>
+                  <Link href="/products/new" className="mt-1 underline underline-offset-2">
+                    Add the product manually instead →
+                  </Link>
+                </div>
+              ) : null}
+
               <div className="rounded border border-warning/30 bg-warning-muted px-3 py-2.5 text-[12px] leading-relaxed text-warning">
                 <p className="font-medium">This text lives only in this browser tab.</p>
                 <p className="mt-0.5">
-                  It is not in the database and not in any log; reloading this page discards it. Field extraction and
-                  the review screen arrive in the next phase — until then, enter what you need manually.
+                  It is not in the database and not in any log; reloading this page discards it. Only the fields you
+                  confirm on the next screen are ever saved.
                 </p>
-                <Link
-                  href="/products/new"
-                  className="mt-1.5 inline-block font-medium underline underline-offset-2"
-                >
-                  Add the product manually →
-                </Link>
               </div>
             </CardContent>
           </Card>

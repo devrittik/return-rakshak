@@ -50,6 +50,11 @@ export async function POST(request: Request) {
   const input = parsed.data;
   const userId = await currentUserId();
 
+  // Provenance is client-declared but constrained: anything unexpected becomes
+  // "manual_entry" rather than being trusted verbatim.
+  const claimedSource = (payload as { source?: unknown }).source;
+  const source = claimedSource === "invoice_ai" ? "invoice_ai" : "manual_entry";
+
   const product = await createProduct(db(), userId, {
     name: input.name,
     seller: input.seller || null,
@@ -58,7 +63,7 @@ export async function POST(request: Request) {
     currency: input.price ? input.currency.toUpperCase() : null,
     category: input.category || null,
     notes: input.notes || null,
-    source: "manual_entry",
+    source,
     policies: [...toPolicyInput(input.returnPolicy), ...toPolicyInput(input.warrantyPolicy)],
   });
 

@@ -33,6 +33,26 @@ deleteProduct(database, userId, productId)
 
 Integration tests assert the negative cases: another user cannot read, delete, or dismiss anything owned by the first. When sessions land, `currentUserId()` starts returning the authenticated id and nothing else changes.
 
+## AI boundary
+
+```
+text ──► AiProvider.extractFields ──► Zod (extractionSchema) ──► checkConsistency ──► review screen
+           │                              │                        │
+        mock | openai-compatible      rejects bad shapes     rejects self-contradiction
+```
+
+- One interface (`lib/ai/types.ts`): the mock and `OpenAiCompatibleProvider` (`lib/ai/openai-compatible.ts`) are
+  interchangeable. Business logic imports the interface, never an SDK. The adapter posts to
+  `{AI_BASE_URL}/chat/completions` (llama.cpp, Ollama, vLLM, LM Studio, or any other open-weight server).
+- Selection is `getAiProvider()`. `AI_PROVIDER=openai-compatible` without `AI_BASE_URL` and `AI_MODEL` returns
+  `not_configured`. It does not quietly switch back to the mock.
+- `POST /api/extract-fields` re-validates whatever the provider returned. A provider is not trusted just because
+  it is ours. User-facing errors are static strings, so a model reply cannot be echoed back.
+- `checkConsistency` rejects a response where a field has a value *and* is listed in `missingFields` — that kind
+  of self-contradiction means the rest of the answer is unreliable too.
+- Raw prompts and raw responses are never logged; only counts, provider name, failure code and duration.
+  Redirects are refused, so the invoice text cannot be forwarded to a second host.
+
 ## Verification model
 
 ```
@@ -50,8 +70,8 @@ Dates are `YYYY-MM-DD` strings, arithmetic is done in UTC. `purchase_date` is a 
 
 | Failure | Behaviour |
 | --- | --- |
-| AI unavailable / timeout | Manual entry stays available; extraction returns a typed error, no partial writes |
-| Malformed model JSON | Zod validation error surfaced to the user, nothing persisted |
+| AI unavailable / timeout / not configured | Manual entry stays available; extraction returns a typed error, no partial writes |
+| Malformed model JSON | Fences, a short preamble, and a double-encoded string are recovered. Anything still unreadable is a typed error, nothing persisted |
 | Invalid date | `computeDeadline` returns `{ ok: false, reason }`; the policy saves with a `NULL` deadline and `needs_review` |
 | Temp cleanup failure | Logged by event name only; the request still fails closed |
 

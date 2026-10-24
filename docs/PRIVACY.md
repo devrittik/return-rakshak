@@ -44,7 +44,7 @@ Structured JSON events only: `product.created`, `product.deleted`, `upload.rejec
 
 ## 5. Third parties
 
-- **AI provider:** optional. Default is a local mock with no network access. If an open-weight endpoint is configured, the extracted invoice *text* is sent to it for the duration of one request — that is the entire purpose of the feature and should be documented for end users. No invoice file is sent.
+- **AI provider:** optional. Default is a local mock with no network access. If an open-weight endpoint is configured (`AI_PROVIDER=openai-compatible`), the extracted invoice *text* is sent to that endpoint for the duration of one request — that is the entire purpose of the feature, and `/privacy` says so. No invoice file is sent. The request refuses redirects, so the text is not forwarded to a second host. Prompts and raw replies are not logged or stored.
 - **Hosted database:** Turso/libSQL stores the same structured fields described above. The AI provider never receives database credentials.
 
 ## 6. User controls

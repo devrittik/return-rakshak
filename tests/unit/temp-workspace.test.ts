@@ -12,10 +12,14 @@ describe("temp workspace", () => {
   it("creates a private directory outside the repository", async () => {
     const workspace = await createTempWorkspace("unit");
     try {
-      expect(workspace.dir.startsWith("/tmp") || workspace.dir.includes("tmp")).toBe(true);
+      const dir = workspace.dir.toLowerCase();
+      expect(dir.startsWith("/tmp") || dir.includes("tmp") || dir.includes("temp")).toBe(true);
       expect(workspace.dir).not.toContain("public");
-      const mode = (await stat(workspace.dir)).mode & 0o777;
-      expect(mode & 0o077).toBe(0);
+      // Windows reports no Unix permission bits; chmod only flips the read-only flag there.
+      if (process.platform !== "win32") {
+        const mode = (await stat(workspace.dir)).mode & 0o777;
+        expect(mode & 0o077).toBe(0);
+      }
     } finally {
       await cleanupTempWorkspace(workspace.dir);
     }
@@ -27,7 +31,9 @@ describe("temp workspace", () => {
       const path = await workspace.write("../../escape.pdf", new Uint8Array([1, 2, 3]));
       expect(path.startsWith(workspace.dir)).toBe(true);
       expect(path).not.toContain("..");
-      expect((await stat(path)).mode & 0o777).toBe(0o600);
+      if (process.platform !== "win32") {
+        expect((await stat(path)).mode & 0o777).toBe(0o600);
+      }
       expect(await readFile(path)).toEqual(Buffer.from([1, 2, 3]));
     } finally {
       await cleanupTempWorkspace(workspace.dir);

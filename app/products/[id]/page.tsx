@@ -143,8 +143,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
                   {policy!.verificationStatus === "needs_review" ? (
                     <p className="mt-3 rounded border border-warning/30 bg-warning-muted px-2.5 py-2 text-[12px] leading-relaxed text-warning">
-                      This duration was entered without confirmation. Edit and confirm it in the policy review step
-                      (Phase 5) before relying on the date.
+                      This policy hasn&apos;t been confirmed against the invoice, so its date is excluded from the
+                      dashboard. Re-upload the invoice to review it again, or keep it as a note.
                     </p>
                   ) : null}
                 </div>

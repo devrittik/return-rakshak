@@ -2,7 +2,7 @@
 
 **Privacy-first return & warranty tracker.** Upload an invoice, review what was extracted, confirm the policy, and get a deadline you can actually rely on — without the invoice ever being stored.
 
-> Status: **Phase 1 complete.** Schema, repository, dashboards, manual entry, reminders and privacy docs are live. Upload → PDF text → OCR → AI extraction arrive in Phases 2–4.
+> Status: **Phase 4 complete.** Upload → PDF text → OCR fallback → structured field extraction → editable review → confirmed save all work end to end, with either the offline mock or a configured open-weight endpoint. `.ics` export and editing a saved policy land in Phase 5.
 
 ---
 
@@ -73,13 +73,23 @@ No account, no API key, no model download. The app is fully usable with **manual
 
 `users → products → policies → reminders`, all foreign keys with `ON DELETE CASCADE`, all indexed on the queries actually used (`policies_user_deadline_idx`, `reminders_user_status_idx`, …). Prices are integer minor units; dates are `YYYY-MM-DD` calendar strings to avoid timezone drift; no column anywhere holds invoice content.
 
-## Enabling local open-weight inference (Phase 4)
+## AI extraction
+
+The default provider is an **offline rule engine** (`MockAiProvider`) — no model, no key, no network. It finds
+*labelled* values only (`Seller:`, `Purchase date:`, `Total:`, "…within 15 days of delivery") and returns
+`missingFields` for everything else. The same input always gives the same output, which is what makes
+"never invent a value" testable.
+
+Every returned field carries `provenance` (`invoice` / `inferred` / `missing`) and `confidence`. The review screen
+shows those as badges, so "Check this" and "Not on the invoice" are visible rather than buried.
+
+## Enabling local open-weight inference
 
 ```bash
 # llama.cpp
 llama-server -m ./models/qwen2.5-7b-instruct-q4_k_m.gguf --port 8080 --ctx-size 8192
 
-# or Ollama
+# or Ollama (its OpenAI route is http://127.0.0.1:11434/v1, model e.g. qwen2.5:7b)
 ollama serve && ollama pull qwen2.5:7b
 ```
 
@@ -90,7 +100,9 @@ AI_MODEL=qwen2.5-7b-instruct
 AI_TIMEOUT_MS=30000
 ```
 
-Keys stay server-side; nothing in the client bundle reads them. No model is downloaded automatically, and no paid API is required at any point.
+`AI_BASE_URL` and `AI_MODEL` are both required in this mode. If either is missing, extraction returns "not configured" and manual entry stays available — the app does not silently fall back to the mock, because that would hide a broken setup. Leave `AI_PROVIDER=mock` when you want the offline extractor.
+
+Keys stay server-side; nothing in the client bundle reads them. No model is downloaded automatically, and no paid API is required at any point. The adapter speaks `POST /v1/chat/completions` with JSON mode, a timeout, and a second attempt without `response_format` when a local server rejects that field.
 
 ## Layout
 
@@ -98,6 +110,7 @@ Keys stay server-side; nothing in the client bundle reads them. No model is down
 app/                 routes: dashboard, products, upload, reminders, privacy, api/
 components/          ui primitives + app components (tokens only, no hardcoded colour)
 lib/data/            drizzle schema, client, repository, demo data
+lib/ai/              provider interface, offline mock, open-weight adapter, schema
 lib/policy/          deterministic deadline engine
 lib/validation/      zod schemas shared by forms and API
 lib/session.ts       the single "who is the user" seam
@@ -113,9 +126,10 @@ tests/               unit · integration · e2e
 - `docs/PRIVACY.md` — the retention policy in detail
 - `docs/DEPLOYMENT.md` — local vs hosted, Turso setup, auth gate
 - `docs/PHASE-1-REPORT.md` — what was built, verified, and what is still open
+- `docs/PHASE-4-REPORT.md` — open-weight adapter, failure modes, and what is still open
 
 ## Roadmap
 
-Phase 2 upload + PDF text + OCR + cleanup · Phase 3 mock AI + review screen · Phase 4 open-weight adapter · Phase 5 `.ics` export and policy review · Phase 6 hardening · **then multi-user auth**.
+Phase 2 upload + PDF text + OCR + cleanup · Phase 3 mock AI + review screen · Phase 4 open-weight adapter · **next:** Phase 5 `.ics` export and policy review · Phase 6 hardening · **then multi-user auth**.
 
 License: MIT.
