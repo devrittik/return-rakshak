@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { log } from "@/lib/logger";
-import { computeDeadline, todayIso } from "@/lib/policy/deadline";
+import { computeDeadline, isValidIsoDate, todayIso } from "@/lib/policy/deadline";
+import { reminderSchedule } from "@/lib/policy/reminders";
 import { newId } from "./ids";
 import type { Database } from "./client";
 import { policies, products, reminders, users, type Policy, type Product, type Reminder } from "./schema";
@@ -222,6 +223,7 @@ export async function insertPolicy(
   const rows = await database.select().from(policies).where(eq(policies.id, id)).limit(1);
   const row = rows[0];
   if (!row) throw new Error("Failed to read back created policy");
+  await syncPolicyReminder(database, userId, row);
   return row;
 }
 
@@ -263,7 +265,38 @@ export async function updatePolicy(
     .where(and(eq(policies.id, policyId), eq(policies.userId, userId)));
 
   const updated = await database.select().from(policies).where(eq(policies.id, policyId)).limit(1);
-  return updated[0] ?? null;
+  const row = updated[0] ?? null;
+  if (row) await syncPolicyReminder(database, userId, row);
+  return row;
+}
+
+/**
+ * A confirmed deadline owns one pending reminder. Editing the policy replaces
+ * that reminder so the date stays in step. Dropping confirmation removes it.
+ * Dismissed reminders are left alone — they are history, not a schedule.
+ */
+async function syncPolicyReminder(database: Database, userId: string, policy: Policy): Promise<void> {
+  await database
+    .delete(reminders)
+    .where(and(eq(reminders.userId, userId), eq(reminders.policyId, policy.id), eq(reminders.status, "pending")));
+
+  if (policy.verificationStatus !== "verified" || !policy.deadlineDate || !isValidIsoDate(policy.deadlineDate)) return;
+
+  const productRows = await database
+    .select({ name: products.name })
+    .from(products)
+    .where(and(eq(products.id, policy.productId), eq(products.userId, userId)))
+    .limit(1);
+  const name = productRows[0]?.name ?? "Product";
+  const schedule = reminderSchedule(policy.kind, name, policy.deadlineDate);
+  await createReminder(database, userId, {
+    productId: policy.productId,
+    policyId: policy.id,
+    kind: schedule.kind,
+    label: schedule.label,
+    remindOn: schedule.remindOn,
+    leadDays: schedule.leadDays,
+  });
 }
 
 export async function deletePolicy(database: Database, userId: string, policyId: string): Promise<boolean> {

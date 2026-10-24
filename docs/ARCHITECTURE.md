@@ -62,9 +62,13 @@ extraction (AI)  →  user review  →  confirmation
 
 `policies.verificationStatus` is the single source of truth. Dashboard queries filter on `verified` by default; `includeUnverified` exists for the review screen and tests. `DeadlineLine` refuses to render a confirmed-looking date for an unverified policy.
 
+A saved policy is edited on the product page. The confirmation checkbox is the only way to set `verified`. `computeDeadline` is the only writer of `deadlineDate`. Saving a verified policy deletes that policy's pending reminders and creates one: 2 days before a return deadline, 14 days before a warranty deadline. Moving the policy back to `needs_review` deletes the pending reminder. A dismissed reminder is left in place.
+
+`GET /api/products/[id]/calendar` builds an all-day `.ics` (`VALUE=DATE`, exclusive `DTEND`) from verified policies only. Unverified policies are omitted, and the route answers 404 when nothing verified remains.
+
 ## Date handling
 
-Dates are `YYYY-MM-DD` strings, arithmetic is done in UTC. `purchase_date` is a fact; `start_date` is a policy input — they are separate columns because they are frequently different (delivery-based returns, extended warranties).
+Dates are `YYYY-MM-DD` strings, arithmetic is done in UTC. `purchase_date` is a fact; `start_date` is a policy input — they are separate columns because they are frequently different (delivery-based returns, extended warranties). Business-day counting skips weekends only. Indian public holidays are not modelled, and the form says so.
 
 ## Failure modes
 

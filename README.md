@@ -2,7 +2,7 @@
 
 **Privacy-first return & warranty tracker.** Upload an invoice, review what was extracted, confirm the policy, and get a deadline you can actually rely on — without the invoice ever being stored.
 
-> Status: **Phase 4 complete.** Upload → PDF text → OCR fallback → structured field extraction → editable review → confirmed save all work end to end, with either the offline mock or a configured open-weight endpoint. `.ics` export and editing a saved policy land in Phase 5.
+> Status: **Phase 5 complete.** Upload → extract → review → confirm → deadline, including correcting a saved policy and downloading a verified deadline as a calendar file. Hardening and deployment notes land in Phase 6.
 
 ---
 
@@ -130,6 +130,6 @@ tests/               unit · integration · e2e
 
 ## Roadmap
 
-Phase 2 upload + PDF text + OCR + cleanup · Phase 3 mock AI + review screen · Phase 4 open-weight adapter · **next:** Phase 5 `.ics` export and policy review · Phase 6 hardening · **then multi-user auth**.
+Phase 2 upload + PDF text + OCR + cleanup · Phase 3 mock AI + review screen · Phase 4 open-weight adapter · Phase 5 policy review, reminders, and `.ics` export · **next:** Phase 6 hardening · **then multi-user auth**.
 
 License: MIT.

@@ -14,9 +14,10 @@ test("upload → extract → review → confirm → save produces a verified dea
   await expect(page.getByLabel("Purchase date")).toHaveValue("2026-10-11");
   await expect(page.getByLabel("Currency")).toHaveValue("INR");
 
-  // The return window says "of delivery", so the start date must be blank.
+  // The return window says "of delivery", so the start date must be blank
+  // and the form must say so instead of inventing a date.
   await expect(page.getByLabel("Return window start")).toHaveValue("");
-  await expect(page.getByText(/doesn't say where this window starts/i)).toBeVisible();
+  await expect(page.getByText(/ties this window to delivery/i)).toBeVisible();
 
   // The extractor deliberately left both start dates blank where the invoice is
   // silent; the user supplies them, then confirms explicitly.
@@ -59,7 +60,7 @@ test("an unconfirmed extraction saves as needs review and stays out of the dashb
   });
   await expect(page.getByText("Needs review").first()).toBeVisible();
   // Both policies are unconfirmed, so both carry the warning.
-  await expect(page.getByText(/excluded from the\s+dashboard/i).first()).toBeVisible();
+  await expect(page.getByText(/stays off the dashboard/i).first()).toBeVisible();
 
   // It may appear in the "needs review" section, but never as a deadline.
   await page.goto("/");

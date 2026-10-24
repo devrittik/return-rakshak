@@ -3,9 +3,10 @@
  * a model may *propose* a duration, but the date is computed here, in code,
  * from an explicit start date and counting convention.
  *
- * Phase 1 ships the core calendar rules (day/month addition with month-end
- * clamping, inclusive/exclusive end, business-day counting). Phase 5 expands
- * this with the full test matrix and holiday handling.
+ * Calendar rules: day and month addition with month-end clamping, inclusive or
+ * exclusive ends, and business days that skip weekends. Indian public holidays
+ * are not modelled — the policy form says so, rather than pretending a holiday
+ * calendar is complete.
  */
 
 export type CountingConvention = "calendar" | "business";

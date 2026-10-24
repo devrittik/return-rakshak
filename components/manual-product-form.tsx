@@ -212,7 +212,7 @@ export function ManualProductForm() {
             </Field>
 
             <Field label="End day" htmlFor="return-inclusive">
-              <Select id="return-inclusive" {...register("returnPolicy.inclusiveEnd", { setValueAs: (v) => v === "true" })}>
+              <Select id="return-inclusive" {...register("returnPolicy.inclusiveEnd", { setValueAs: (v) => v === true || v === "true" })}>
                 <option value="true">Include the last day</option>
                 <option value="false">Exclude the last day</option>
               </Select>

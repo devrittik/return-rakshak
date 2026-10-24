@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { addCalendarDays, todayIso } from "@/lib/policy/deadline";
 import type { Database } from "./client";
-import { createProduct, createReminder, listProducts } from "./repository";
+import { createProduct } from "./repository";
 import { products } from "./schema";
 
 /**
@@ -123,35 +123,6 @@ export async function loadDemoData(database: Database, userId: string): Promise<
       },
     ],
   });
-
-  const created = await listProducts(database, userId, { includePolicies: true });
-  const byName = (needle: string) => created.find((p) => p.name.includes(needle));
-
-  const headphones = byName("Aurora");
-  const returnPolicy = headphones?.policies.find((p) => p.kind === "return");
-  if (headphones && returnPolicy?.deadlineDate) {
-    await createReminder(database, userId, {
-      productId: headphones.id,
-      policyId: returnPolicy.id,
-      kind: "return_deadline",
-      label: `Return window closes: ${headphones.name}`,
-      remindOn: addCalendarDays(returnPolicy.deadlineDate, -2),
-      leadDays: 2,
-    });
-  }
-
-  const kettle = byName("Kettle");
-  const kettleWarranty = kettle?.policies.find((p) => p.kind === "warranty");
-  if (kettle && kettleWarranty?.deadlineDate) {
-    await createReminder(database, userId, {
-      productId: kettle.id,
-      policyId: kettleWarranty.id,
-      kind: "warranty_expiry",
-      label: `Warranty needs review: ${kettle.name}`,
-      remindOn: today,
-      leadDays: 0,
-    });
-  }
 
   return { created: 3 };
 }

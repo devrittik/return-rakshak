@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/action-button";
 import { PageHeader } from "@/components/page-header";
+import { PolicyEditor } from "@/components/policy-editor";
 import { DeadlineLine, PolicyDuration, VerificationBadge } from "@/components/policy-status";
+import { ProductFactsForm } from "@/components/product-facts-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/data/client";
 import { getProduct } from "@/lib/data/repository";
@@ -30,6 +32,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const today = todayIso();
   const returnPolicy = product.policies.find((p) => p.kind === "return");
   const warrantyPolicy = product.policies.find((p) => p.kind === "warranty");
+  const hasExport = product.policies.some((policy) => policy.verificationStatus === "verified" && policy.deadlineDate);
+  const priceInput =
+    product.priceMinor === null ? "" : (product.priceMinor / 100).toFixed(2).replace(/\.00$/, "");
 
   return (
     <>
@@ -50,7 +55,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           .filter(Boolean)
           .join(" · ")}
         actions={
-          <ActionButton
+          <>
+            {hasExport ? (
+              <a
+                href={`/api/products/${product.id}/calendar`}
+                className="inline-flex h-8 items-center rounded border border-border bg-card px-3 text-[13px] font-medium hover:bg-muted"
+              >
+                Download calendar
+              </a>
+            ) : null}
+            <ActionButton
             variant="outline"
             size="sm"
             endpoint={`/api/products/${product.id}`}
@@ -60,6 +74,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           >
             Delete product
           </ActionButton>
+          </>
         }
       />
 
@@ -143,10 +158,26 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
                   {policy!.verificationStatus === "needs_review" ? (
                     <p className="mt-3 rounded border border-warning/30 bg-warning-muted px-2.5 py-2 text-[12px] leading-relaxed text-warning">
-                      This policy hasn&apos;t been confirmed against the invoice, so its date is excluded from the
-                      dashboard. Re-upload the invoice to review it again, or keep it as a note.
+                      This policy is not confirmed, so its date stays off the dashboard and out of the calendar file.
+                      Correct it below, then tick the confirmation box.
                     </p>
                   ) : null}
+                  <PolicyEditor
+                    productId={product.id}
+                    policy={{
+                      id: policy!.id,
+                      kind: policy!.kind,
+                      durationValue: policy!.durationValue,
+                      durationUnit: policy!.durationUnit,
+                      startDate: policy!.startDate,
+                      countingConvention: policy!.countingConvention,
+                      inclusiveEnd: policy!.inclusiveEnd,
+                      source: policy!.source,
+                      evidence: policy!.evidence,
+                      verificationStatus: policy!.verificationStatus,
+                      deadlineDate: policy!.deadlineDate,
+                    }}
+                  />
                 </div>
               ))}
             </CardContent>
@@ -192,6 +223,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <dd className="font-medium">{formatDate(product.createdAt.toISOString().slice(0, 10))}</dd>
                 </div>
               </dl>
+              <ProductFactsForm
+                productId={product.id}
+                name={product.name}
+                seller={product.seller ?? ""}
+                purchaseDate={product.purchaseDate ?? ""}
+                price={priceInput}
+                currency={product.currency ?? "INR"}
+              />
             </CardContent>
           </Card>
 

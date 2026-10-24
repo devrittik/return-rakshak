@@ -44,6 +44,14 @@ export default async function RemindersPage() {
           <Badge tone={reminder.kind === "warranty_expiry" ? "info" : "primary"}>
             {reminder.kind === "warranty_expiry" ? "Warranty" : reminder.kind === "return_deadline" ? "Return" : "Custom"}
           </Badge>
+          {reminder.policyId && reminder.kind !== "custom" ? (
+            <a
+              href={`/api/products/${reminder.productId}/calendar?policy=${reminder.policyId}`}
+              className="text-[12.5px] font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Calendar
+            </a>
+          ) : null}
           <ActionButton
             variant="ghost"
             size="sm"

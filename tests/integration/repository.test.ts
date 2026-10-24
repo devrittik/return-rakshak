@@ -159,6 +159,22 @@ describe("policies", () => {
     expect(unverified?.verifiedAt).toBeNull();
   });
 
+  it("schedules a reminder only while the policy is confirmed, and moves it when the deadline moves", async () => {
+    const product = await createProduct(database, userId, { name: "Tracked", policies: [returnPolicy] });
+    const policy = product.policies[0]!;
+    const pending = await listReminders(database, userId, { status: "pending" });
+    expect(pending).toHaveLength(1);
+    expect(pending[0]).toMatchObject({ policyId: policy.id, remindOn: "2026-10-09", leadDays: 2 });
+
+    await updatePolicy(database, userId, policy.id, { durationValue: 30 });
+    const moved = await listReminders(database, userId, { status: "pending" });
+    expect(moved).toHaveLength(1);
+    expect(moved[0]?.remindOn).toBe("2026-10-29");
+
+    await updatePolicy(database, userId, policy.id, { verificationStatus: "needs_review" });
+    expect(await listReminders(database, userId, { status: "pending" })).toHaveLength(0);
+  });
+
   it("indexes deadlines for dashboard queries", async () => {
     const indexes = await client.execute("PRAGMA index_list(policies)");
     const names = indexes.rows.map((row) => String(row.name));
