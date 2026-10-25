@@ -78,6 +78,11 @@ Dates are `YYYY-MM-DD` strings, arithmetic is done in UTC. `purchase_date` is a 
 | Malformed model JSON | Fences, a short preamble, and a double-encoded string are recovered. Anything still unreadable is a typed error, nothing persisted |
 | Invalid date | `computeDeadline` returns `{ ok: false, reason }`; the policy saves with a `NULL` deadline and `needs_review` |
 | Temp cleanup failure | Logged by event name only; the request still fails closed |
+| Production + hosted database, no acknowledgement | `assertSafeDeployment` throws before the connection is used. Local SQLite is unaffected. `RR_ALLOW_UNAUTHENTICATED_HOST=1` is an explicit private-host exception, not a login |
+
+## Response headers
+
+Every response sets `nosniff`, `DENY` framing, `no-referrer`, and a content-security policy whose default is `'self'`. Inline scripts stay allowed because the theme snippet and Next's bootstrap are inline. `unsafe-eval` is added only when `NODE_ENV` is not production. The browser's `connect-src` is this origin, so a configured model endpoint is reached by the server, not by the page.
 
 ## Explicit non-goals (MVP)
 

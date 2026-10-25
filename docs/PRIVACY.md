@@ -56,3 +56,16 @@ Structured JSON events only: `product.created`, `product.deleted`, `upload.rejec
 ## 7. Multi-user
 
 Records are scoped by `user_id` today, with a single local owner. Real authentication and authorization are required before any hosted deployment serves more than one person — an unauthenticated shared database is explicitly out of scope. `lib/session.ts` is the only function that will change.
+
+Production enforces the boundary at startup. If `TURSO_DATABASE_URL` is set and `RR_ALLOW_UNAUTHENTICATED_HOST` is not exactly `1`, the server throws before it opens the database. The error does not include the URL or the token. Local SQLite (`next start` on your own machine) is not affected. Setting the acknowledgement means "this host is private and still single-user." It does not authenticate anyone.
+
+## 8. Response headers
+
+`lib/security/headers.mjs` attaches, on every route:
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY` and CSP `frame-ancestors 'none'`
+- `Referrer-Policy: no-referrer`, so a product name in a URL is not sent onwards
+- `Content-Security-Policy` with `default-src 'self'`, `object-src 'none'`, and `connect-src 'self'`
+
+Inline scripts are allowed because the theme snippet in the root layout is inline. Production does not allow `unsafe-eval`. The page cannot open a connection to the model endpoint; that request is made by the server.

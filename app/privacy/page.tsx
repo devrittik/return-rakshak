@@ -94,9 +94,13 @@ export default function PrivacyPage() {
               In local mode the database file lives on your machine, outside the web root, and no account is needed.
             </p>
             <p>
-              Every table is already keyed by a user id and every query filters on it. A hosted deployment stays
-              single-user until real authentication and authorisation are implemented — an unauthenticated shared
-              database is never an acceptable configuration.
+              Every table is already keyed by a user id and every query filters on it. A production server that is
+              pointed at a hosted database refuses to start until you explicitly mark it as a private single-user
+              deployment. That acknowledgement is not a login.
+            </p>
+            <p>
+              Responses send a content-security policy, refuse to be framed, and do not attach a referrer. The
+              browser is not allowed to talk to any host except this one.
             </p>
           </CardContent>
         </Card>

@@ -2,7 +2,7 @@
 
 **Privacy-first return & warranty tracker.** Upload an invoice, review what was extracted, confirm the policy, and get a deadline you can actually rely on — without the invoice ever being stored.
 
-> Status: **Phase 5 complete.** Upload → extract → review → confirm → deadline, including correcting a saved policy and downloading a verified deadline as a calendar file. Hardening and deployment notes land in Phase 6.
+> Status: **Phase 6 complete.** Upload → extract → review → confirm → deadline → calendar file. Production refuses a hosted database until you explicitly mark it as a private single-user host. Multi-user authentication is the remaining gate before a public deployment.
 
 ---
 
@@ -125,11 +125,12 @@ tests/               unit · integration · e2e
 - `docs/ARCHITECTURE.md` — boundaries and why they exist
 - `docs/PRIVACY.md` — the retention policy in detail
 - `docs/DEPLOYMENT.md` — local vs hosted, Turso setup, auth gate
-- `docs/PHASE-1-REPORT.md` — what was built, verified, and what is still open
-- `docs/PHASE-4-REPORT.md` — open-weight adapter, failure modes, and what is still open
+- `docs/PHASE-4-REPORT.md` — open-weight adapter and failure modes
+- `docs/PHASE-5-REPORT.md` — policy edit, reminders, and calendar export
+- `docs/PHASE-6-REPORT.md` — security headers, the hosted-database gate, and the checks that were run
 
 ## Roadmap
 
-Phase 2 upload + PDF text + OCR + cleanup · Phase 3 mock AI + review screen · Phase 4 open-weight adapter · Phase 5 policy review, reminders, and `.ics` export · **next:** Phase 6 hardening · **then multi-user auth**.
+Phase 2 upload + PDF text + OCR + cleanup · Phase 3 mock AI + review screen · Phase 4 open-weight adapter · Phase 5 policy review, reminders, and `.ics` export · Phase 6 security headers, hosted-database gate, docs · **next:** multi-user authentication before any public deployment.
 
 License: MIT.

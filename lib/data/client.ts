@@ -3,6 +3,7 @@ import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { databaseConfig } from "@/lib/env";
+import { assertSafeDeployment } from "@/lib/security/deployment";
 import * as schema from "./schema";
 
 export type Database = LibSQLDatabase<typeof schema>;
@@ -34,6 +35,7 @@ export function createDatabase(opts?: { url?: string; authToken?: string }): Dat
 }
 
 export function db(): Database {
+  assertSafeDeployment();
   singleton ??= createDatabase();
   return singleton;
 }

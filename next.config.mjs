@@ -1,7 +1,13 @@
+import { securityHeaders } from "./lib/security/headers.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  async headers() {
+    const dev = process.env.NODE_ENV !== "production";
+    return [{ source: "/(.*)", headers: securityHeaders(dev) }];
+  },
   experimental: {
     serverActions: {
       // Invoices are capped at 10 MB by the upload route; keep body limits aligned.
